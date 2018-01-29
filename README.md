@@ -4,8 +4,8 @@
 
 After you've implemented `FullyAssocLiFoCache.java` you can build the code e.g. using the provided Scons script:
 
-  $ scons
+        $ scons
 
 and run it as follows:
 
-  $ java ads2.cw1.Main
+        $ java ads2.cw1.Main
