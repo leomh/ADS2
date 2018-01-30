@@ -62,8 +62,14 @@ You should unit test every method you implement. Once your code is fully impleme
 \begin{itemize}
 \item Please note that whenever the specification (this document) says \emph{must}, then you will lose marks if you don't. In particular, if you do not follow the required structure and naming conventions for your submission, you will be penalised.  
 
-\item Your code will be marked using a test script. This script will test if your code builds correctly and runs correctly for a number of use cases. I will not modify the provided testbench code but I may modify the memory and cache parameters. I will also run an additional test. 
-\item The script will also perform source code analysis to see if you have used the correct API calls, data structures etc. 
+\item Your code will be marked using a test script. This script will test if your code builds correctly and runs correctly for a number of use cases (70\% of the marks). I will not modify the provided testbench code but I may modify the memory and cache parameters. I will also run an additional test. 
+\item The script will also perform source code analysis to see if you have used the correct API calls, data structures etc (30\% of the marks).  In particular, I will check
+\begin{itemize}
+\item Correctness of the constructor of the FullyAssocLiFoCache class.
+\item Correct use of the various attributes of the FullyAssocLiFoCache class in the implementation of its methods.
+\item Correct implementation and use use of the various methods of the FullyAssocLiFoCache class.
+\item Correct use of the Status class to report the status of the cache at every operation.
+\end{itemize}
 \end{itemize}
 
 \end{document}  
