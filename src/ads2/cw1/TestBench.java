@@ -30,6 +30,7 @@ class TestBench {
     private int MEM_SZ;
     private int CACHE_SZ;
     private int CACHELINE_SZ;
+    private int CL_SHIFT;
 
     void run(int ntests) {
         if (ntests>0) test1();
@@ -44,6 +45,9 @@ class TestBench {
         CACHE_SZ = mem.getCacheSize();
         CACHELINE_SZ = mem.getCacheLineSize();
 
+        Double cls = Math.log(CACHELINE_SZ)/Math.log(2);
+        CL_SHIFT = cls.intValue();
+        
         reference = new int[MEM_SZ];
         buffer = new int[MEM_SZ];
 
