@@ -10,9 +10,10 @@ public class Main {
 
     public static void main(String[] args) {
 
-        final int MEM_SZ=1024;
-        final int CACHE_SZ=8*16;
-        final int CACHELINE_SZ=16;
+        final int MEM_SZ=1024; // 1024 words
+        final int CACHELINE_SZ=16; // 16 words
+        final int CACHE_SZ=8*CACHELINE_SZ; // 8 lines of 16 words
+        
         // Create a Memory instance
         Memory mem = new Memory(MEM_SZ,CACHE_SZ,CACHELINE_SZ);
         // Create a Testbench instance

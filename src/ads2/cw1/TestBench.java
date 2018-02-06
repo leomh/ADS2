@@ -66,21 +66,21 @@ class TestBench {
 
 //            System.out.println("Assert: "+mem.status.hit());
 
-            // Every i % 16 should be miss, all other should be hit
+            // Every i % CACHELINE_SZ should be miss, all other should be hit
             boolean hit_miss;
-            if (i % 16 == 0) {
+            if (i % CACHELINE_SZ == 0) {
                 hit_miss = !mem.status.hit() ;
             } else {
                 hit_miss = mem.status.hit() ;
             }
-            // The first 8 cache lines will have evict = false,
+            // The first CACHE_SZ/CACHELINE_SZ cache lines will have evict = false,
             // then every first access to a cache line will result in eviction
             boolean evicted;
-            if (i<8*16) {
+            if (i<CACHE_SZ) {
                 evicted = !mem.status.evicted();
             } else {
-                // for i >= 8*16, the first access leads to eviction
-                if (i%16==0) {
+                // for i >= CACHE_SZ, the first access leads to eviction
+                if (i % CACHELINE_SZ ==0) {
                     evicted = mem.status.evicted();
                 } else {
                     evicted = !mem.status.evicted();
@@ -88,8 +88,9 @@ class TestBench {
             }
             // The stack size will decrease with every cache line until it hits 0
             boolean free;
-            if ( i < 8*16 ) {
-                free = mem.status.freeLocations() == 7 - (i>>4);
+            if ( i < CACHE_SZ ) {
+//                free = mem.status.freeLocations() == 7 - (i>>4);
+                free = mem.status.freeLocations() == (CACHE_SZ/CACHELINE_SZ) - 1 - (i >> CL_SHIFT);
             } else {
                 free = mem.status.freeLocations() == 0;
             }
@@ -106,8 +107,8 @@ class TestBench {
             boolean content_ok = true;
             if (mem.status.evicted()) {
                 int cla = mem.status.evictedCacheLineAddr();
-                for (int j = 0; j<16;j++) {
-                    int addr = 16 * cla + j;
+                for (int j = 0; j<CACHELINE_SZ;j++) {
+                    int addr = CACHELINE_SZ * cla + j;
                     content_ok = content_ok  && (reference[addr] == mem.ram[addr]);
                 }
             } else {
@@ -131,7 +132,17 @@ class TestBench {
         boolean mem_content_ok =  Arrays.equals(reference, mem.ram);
 //        System.out.println(mem_content_ok);
         assert mem_content_ok;
-        System.out.println("Score for test 1: "+(score*100/MEM_SZ/4)+"%");
+        if (mem_content_ok) {
+            score+=MEM_SZ;
+        } else {
+            for (int k=0;k<MEM_SZ,k++) {
+                if (reference[k] == buffer[k]) {
+                    score++;
+                }
+            }
+        }        
+
+        System.out.println("Score for test 1: "+(score*100/MEM_SZ/5)+"%");
     }
 
     void test2() {
@@ -148,7 +159,7 @@ class TestBench {
 
 
             boolean hit_miss;
-            if (i % 16 == 0) {
+            if (i % CACHELINE_SZ == 0) {
                 hit_miss = !mem.status.hit() ;
             } else {
                 hit_miss = mem.status.hit() ;
@@ -156,11 +167,11 @@ class TestBench {
             // The first 8 cache lines will have evict = false,
             // then every first access to a cache line will result in eviction
             boolean evicted;
-            if (i<8*16) {
+            if (i<CACHE_SZ) {
                 evicted = !mem.status.evicted();
             } else {
                 // for i >= 8*16, the first access leads to eviction
-                if (i%16==0) {
+                if (i % CACHELINE_SZ==0) {
                     evicted = mem.status.evicted();
                 } else {
                     evicted = !mem.status.evicted();
@@ -168,8 +179,9 @@ class TestBench {
             }
             // The stack size will decrease with every cache line until it hits 0
             boolean free;
-            if ( i < 8*16 ) {
-                free = mem.status.freeLocations() == 7 - (i>>4);
+            if ( i < CACHE_SZ ) {
+//                free = mem.status.freeLocations() == 7 - (i>>4);
+                free = mem.status.freeLocations() == (CACHE_SZ/CACHELINE_SZ) - 1 - (i >> CL_SHIFT);
             } else {
                 free = mem.status.freeLocations() == 0;
             }
@@ -192,9 +204,14 @@ class TestBench {
         mem.flush();
         boolean mem_content_ok =  Arrays.equals(reference, buffer);
         assert mem_content_ok;
-        // FIXME: need to compare individual elements!
         if (mem_content_ok) {
-            score+=1024;
+            score+=MEM_SZ;
+        } else {
+            for (int k=0;k<MEM_SZ,k++) {
+                if (reference[k] == buffer[k]) {
+                    score++;
+                }
+            }
         }
         System.out.println("Score for test 2: "+(score*100/MEM_SZ/4)+"%");
 
