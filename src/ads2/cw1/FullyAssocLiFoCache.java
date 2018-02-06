@@ -69,6 +69,9 @@ class FullyAssocLiFoCache implements Cache {
         write_data_to_cache(ram, address, data, status);
     }
 
+    // The next two methods are the most important ones as they implement read() and write()
+    // Both methods modify the status object that is provided as argument
+
     private void write_data_to_cache(int[] ram, int address, int data, Status status){
         status.setReadWrite(false); // i.e. a write
         status.setAddress(address);
@@ -80,7 +83,7 @@ class FullyAssocLiFoCache implements Cache {
          // ...
 
     }
-
+        
     private int read_data_from_cache(int[] ram,int address, Status status){
         status.setReadWrite(true); // i.e. a read
         status.setAddress(address);
@@ -97,6 +100,7 @@ class FullyAssocLiFoCache implements Cache {
     }
 
     // You might want to use the following methods as helpers
+    // but it is not mandatory, you may write your own as well
     
     // On read miss, fetch a cache line    
     private void read_from_mem_on_miss(int[] ram,int address){
@@ -127,12 +131,14 @@ class FullyAssocLiFoCache implements Cache {
         return cache_line[cache_line_address(address)];
     }
 
+    // Should return the next free location in the cache
     private int get_next_free_location(){
          // Your code here
          // ...
         
     }
 
+    // Given a cache location, evict the cache line stored there
     private void evict_location(int loc){
          // Your code here
          // ...
@@ -145,6 +151,7 @@ class FullyAssocLiFoCache implements Cache {
         
     }
 
+    // When evicting a cache line, write its contents back to main memory
     private void write_to_mem_on_evict(int[] ram, int loc){
 
         int evicted_cl_address;
@@ -157,21 +164,26 @@ class FullyAssocLiFoCache implements Cache {
         evict_location(loc);
     }
 
+    // Test if a main memory address is in a cache line stored in the cache
+    // In other words, is the value for this memory address stored in the cache?
     private boolean address_in_cache_line(int address) {
         // Your code here
          // ...
         
     }
 
+    // Given a main memory address, return the corresponding cache line address
     private int cache_line_address(int address) {
         return address>>CL_SHIFT;
     }
 
-    private int cache_entry_position(int cl_address) {
-        return cl_address & CL_MASK;
+    // Given a main memory address, return the corresponding index into the cache line
+    private int cache_entry_position(int address) {
+        return address & CL_MASK;
     }
-
-    private int mem_address(int cl_address) {
+    // Given a cache line address, return the corresponding main memory address
+    // This is the starting address of the cache line in main memory
+    private int cache_line_start_mem_address(int cl_address) {
         return cl_address<<CL_SHIFT;
     }
 
