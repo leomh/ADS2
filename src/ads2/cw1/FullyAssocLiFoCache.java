@@ -26,7 +26,7 @@ class FullyAssocLiFoCache implements Cache {
     // "Last Used" means accessed for either read or write
     // The helper functions below contain all needed assignments to last_used_loc so I recommend you use these.
 
-    private int last_used_loc
+    private int last_used_loc;
     // WV: Your other data structures here
     // Hint: You need 4 data structures
     // - One for the cache storage

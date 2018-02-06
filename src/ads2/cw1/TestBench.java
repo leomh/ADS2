@@ -139,7 +139,7 @@ class TestBench {
         if (mem_content_ok) {
             score+=MEM_SZ;
         } else {
-            for (int k=0;k<MEM_SZ,k++) {
+            for (int k=0;k<MEM_SZ;k++) {
                 if (reference[k] == buffer[k]) {
                     score++;
                 }
@@ -211,7 +211,7 @@ class TestBench {
         if (mem_content_ok) {
             score+=MEM_SZ;
         } else {
-            for (int k=0;k<MEM_SZ,k++) {
+            for (int k=0;k<MEM_SZ;k++) {
                 if (reference[k] == buffer[k]) {
                     score++;
                 }
