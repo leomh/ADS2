@@ -26,18 +26,18 @@ class FullyAssocLiFoCache implements Cache {
     // "Last Used" means accessed for either read or write
     // The helper functions below contain all needed assignments to last_used_loc so I recommend you use these.
 
-    private int last_used_loc
+    private int last_used_loc;
     // WV: Your other data structures here
     // Hint: You need 4 data structures
     // - One for the cache storage
-    private ... cache_storage;    
+    private int[] cache_storage;    
     // - One to manage locations in the cache
-    private ... location_stack;    
+    private Stack<Integer> location_stack;    
     // And because the cache is Fully Associative:
     // - One to translate between memory addresses and cache locations
-    private ... address_to_cache_loc;
+    private HashMap<Integer,Integer> address_to_cache_loc;
     // - One to translate between cache locations and memory addresses  
-    private ... cache_loc_to_address;
+    private HashMap<Integer,Integer> cache_loc_to_address;
     
 
 
