@@ -140,7 +140,8 @@ class FullyAssocLiFoCache implements Cache {
         int[] cache_line;
         int loc;
        
-        // main memory address to cache location
+        // find the cache entry for a given memory address
+        // update cache location mapping
     
         
         last_used_loc=loc;
@@ -154,8 +155,7 @@ class FullyAssocLiFoCache implements Cache {
 
     // Given a cache location, evict the cache line stored there
     private void evict_location(int loc){
-         // Your code here
-         // ...
+         // set the location as free location in the stack
         
     }
 
@@ -169,10 +169,17 @@ class FullyAssocLiFoCache implements Cache {
         int evicted_cl_address;
         int[] cache_line;
         if (VERBOSE) System.out.println("Cache line to RAM: ");
-        // Your code here
-         // ...
+        evicted_cl_address = cache_line_start_mem_address(loc);
+        // get cache location to memory mapping
+        cache_line = cache_storage[cache_loc_to_address.get(loc)];
         
-
+        // write data to retrieved memory address
+        for (int i=0; i<CACHELINE_SZ;i++) {
+        		// Evict the sequence of addresses to RAM
+        		ram[evicted_cl_address+i] = cache_line[i];
+        }
+        
+        // update free location stack
         evict_location(loc);
     }
 
