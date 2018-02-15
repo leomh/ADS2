@@ -140,7 +140,7 @@ class TestBench {
             score+=MEM_SZ;
         } else {
             for (int k=0;k<MEM_SZ;k++) {
-                if (reference[k] == buffer[k]) {
+                if (reference[k] == mem.ram[k]) {
                     score++;
                 }
             }
