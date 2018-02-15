@@ -2,11 +2,13 @@ package ads2.cw1;
 
 /**
  * Created by wim on 28/11/2017.
+ * Modified by 2264897V
  * The public interface of this class is provided by Cache
  * All other methods are private. 
  * You must implement/complete all these methods
  * You are allow to create helper methods to do this, put them at the end of the class 
  */
+
 import ads2.cw1.Cache;
 
 import java.util.Stack;
@@ -25,18 +27,17 @@ class FullyAssocLiFoCache implements Cache {
     // WV: because the cache replacement policy is "Last In First Out" you only need to know the "Last Used" location
     // "Last Used" means accessed for either read or write
     // The helper functions below contain all needed assignments to last_used_loc so I recommend you use these.
-
+    
+    // data structure for the last used location in the cache
     private int last_used_loc;
-    // WV: Your other data structures here
-    // Hint: You need 4 data structures
-    // - One for the cache storage
+    // data structure for the cache storage
     private int[] cache_storage;    
-    // - One to manage locations in the cache
+    // data structure to manage free locations in the cache
     private Stack<Integer> location_stack;    
     // And because the cache is Fully Associative:
-    // - One to translate between memory addresses and cache locations
+    // data structure to translate between memory addresses and cache locations
     private HashMap<Integer,Integer> address_to_cache_loc;
-    // - One to translate between cache locations and memory addresses  
+    // data structure to translate between cache locations and memory addresses  
     private HashMap<Integer,Integer> cache_loc_to_address;
     
 
@@ -51,7 +52,8 @@ class FullyAssocLiFoCache implements Cache {
 
         last_used_loc = CACHE_SZ/CACHELINE_SZ - 1;
         // WV: Your initialisations here
-       
+        cache_storage = new int[cacheSize];
+        location_stack = new Stack<>();
     }
 
     public void flush(int[] ram, Status status) {
@@ -62,7 +64,7 @@ class FullyAssocLiFoCache implements Cache {
     }
 
     public int read(int address,int[] ram,Status status) {
-        return read_data_from_cache( ram, address, status);
+        return read_data_from_cache(ram, address, status);
     }
 
     public void write(int address,int data, int[] ram,Status status) {
@@ -84,7 +86,7 @@ class FullyAssocLiFoCache implements Cache {
 
     }
         
-    private int read_data_from_cache(int[] ram,int address, Status status){
+    private int read_data_from_cache(int[] ram, int address, Status status){
         status.setReadWrite(true); // i.e. a read
         status.setAddress(address);
         status.setEvicted(false);
@@ -103,13 +105,25 @@ class FullyAssocLiFoCache implements Cache {
     // but it is not mandatory, you may write your own as well
     
     // On read miss, fetch a cache line    
-    private void read_from_mem_on_miss(int[] ram,int address){
+    private void read_from_mem_on_miss(int[] ram, int address) {
+    		if (VERBOSE) System.out.println("Cache read miss, fetching data from memory");
         int[] cache_line = new int[CACHELINE_SZ];
         int loc;
-        // Your code here
-         // ...
-
-        last_used_loc=loc;
+        // fetch cache line from given ram[] int address
+        // write to cache
+        for (int i = 0; i < CACHELINE_SZ; i++) {
+        		cache_line[i] = ram[address+i];
+        		//cache_storage[i] = cache_line[i];
+        }
+        
+        // put it in free cache location and remove it from the location stack
+        loc = get_next_free_location();
+        
+        // update lookup table
+        cache_loc_to_address.put(loc,  address);
+        
+        // update last used location as cache location
+        last_used_loc = loc;
    }
 
     // On write, modify a cache line
@@ -118,24 +132,24 @@ class FullyAssocLiFoCache implements Cache {
          // Your code here
          // ...
 
-        last_used_loc=loc;
+        last_used_loc = loc;
        }
 
     // When we fetch a cache entry, we also update the last used location
     private int fetch_cache_entry(int address){
         int[] cache_line;
         int loc;
-         // Your code here
-         // ...
+       
+        // main memory address to cache location
+    
+        
         last_used_loc=loc;
         return cache_line[cache_line_address(address)];
     }
 
     // Should return the next free location in the cache
     private int get_next_free_location(){
-         // Your code here
-         // ...
-        
+        return location_stack.pop();
     }
 
     // Given a cache location, evict the cache line stored there
@@ -146,13 +160,11 @@ class FullyAssocLiFoCache implements Cache {
     }
 
     private boolean cache_is_full(){
-         // Your code here
-         // ...
-        
+         return location_stack.empty();
     }
 
     // When evicting a cache line, write its contents back to main memory
-    private void write_to_mem_on_evict(int[] ram, int loc){
+    private void write_to_mem_on_evict(int[] ram, int loc) {
 
         int evicted_cl_address;
         int[] cache_line;
@@ -167,9 +179,9 @@ class FullyAssocLiFoCache implements Cache {
     // Test if a main memory address is in a cache line stored in the cache
     // In other words, is the value for this memory address stored in the cache?
     private boolean address_in_cache_line(int address) {
-        // Your code here
-         // ...
-        
+        boolean inCache = address_to_cache_loc.containsKey(cache_line_address(address));
+        if (VERBOSE) System.out.println("Looking for " + Integer.toString(address) + " in cache");
+        return inCache;
     }
 
     // Given a main memory address, return the corresponding cache line address
@@ -181,6 +193,7 @@ class FullyAssocLiFoCache implements Cache {
     private int cache_entry_position(int address) {
         return address & CL_MASK;
     }
+    
     // Given a cache line address, return the corresponding main memory address
     // This is the starting address of the cache line in main memory
     private int cache_line_start_mem_address(int cl_address) {
