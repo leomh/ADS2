@@ -107,56 +107,76 @@ class FullyAssocLiFoCache implements Cache {
     // On read miss, fetch a cache line    
     private void read_from_mem_on_miss(int[] ram, int address) {
     		if (VERBOSE) System.out.println("Cache read miss, fetching data from memory");
-        int[] cache_line = new int[CACHELINE_SZ];
-        int loc;
-        // fetch cache line from given ram[] int address
-        // write to cache
-        for (int i = 0; i < CACHELINE_SZ; i++) {
-        		cache_line[i] = ram[address+i];
-        		//cache_storage[i] = cache_line[i];
+        int[] cache_line = new int[CACHELINE_SZ]; 
+        
+        if (cache_is_full()) {
+	        	if (VERBOSE) System.out.println("Cache is full, evicting last cache line: "+ last_used_loc);
+	        	write_to_mem_on_evict(ram, last_used_loc);
         }
         
-        // put it in free cache location and remove it from the location stack
-        loc = get_next_free_location();
+        int loc = get_next_free_location(); 
+        // UNSURE IF NECESSARY: get cache line address given the main memory address
+        int cl_address = cache_line_address(address);
         
-        // update lookup table
-        cache_loc_to_address.put(loc,  address);
+        for (int i=0; i < CACHELINE_SZ; i++) {
+        		// load data into cache line
+        		cache_line[i] = ram[cl_address+i];
+        }
+        
+        // update look up tables
+        address_to_cache_loc.put(cl_address, loc);
+        cache_loc_to_address.put(loc, address);
+        
+        // load cache with the cache line
+        for (int i =0; i<CACHELINE_SZ; i++) {
+        		cache_storage[loc+i] = cache_line[i];
+        }
         
         // update last used location as cache location
         last_used_loc = loc;
    }
 
     // On write, modify a cache line
-    private void update_cache_entry(int address, int data){
-        int loc;
-         // Your code here
-         // ...
+    private void update_cache_entry(int address, int data) {
+    		// get the location of the current data in the cache for the given memory address
+        int loc = address_to_cache_loc.get(address);
+         // very unsure about this
+        cache_storage[loc] = data;
 
         last_used_loc = loc;
        }
 
     // When we fetch a cache entry, we also update the last used location
-    private int fetch_cache_entry(int address){
-        int[] cache_line;
-        int loc;
-       
-        // find the cache entry for a given memory address
-        // update cache location mapping
-    
+    private int fetch_cache_entry(int address) {
+    		if (VERBOSE) System.out.println("Fetching data from cache");
+        int[] cache_line = new int[CACHELINE_SZ];
+        int loc = address_to_cache_loc.get(address);
         
+        for (int i = 0; i < CACHELINE_SZ; i++) {
+        		cache_line[i] = cache_storage[loc+i];
+        }
+    
         last_used_loc=loc;
         return cache_line[cache_line_address(address)];
     }
 
     // Should return the next free location in the cache
+    // otherwise if cache is full returns -1
     private int get_next_free_location(){
-        return location_stack.pop();
+    		if (!cache_is_full()) {
+    			return location_stack.pop();
+    		} else {
+    			return -1;
+    		}
     }
 
     // Given a cache location, evict the cache line stored there
     private void evict_location(int loc){
          // set the location as free location in the stack
-        
+    		if (VERBOSE) System.out.println("Push " + Integer.toString(loc) + " onto the free locations stack");
+    		location_stack.push(address_to_cache_loc.get(loc));
+    		cache_loc_to_address.remove(location_stack.peek());
+    		address_to_cache_loc.remove(loc);    
     }
 
     private boolean cache_is_full(){
@@ -166,15 +186,13 @@ class FullyAssocLiFoCache implements Cache {
     // When evicting a cache line, write its contents back to main memory
     private void write_to_mem_on_evict(int[] ram, int loc) {
 
-        int evicted_cl_address;
-        int[] cache_line;
+        int evicted_cl_address = cache_line_start_mem_address(loc);
+        int[] cache_line = new int[CACHELINE_SZ];
         if (VERBOSE) System.out.println("Cache line to RAM: ");
-        evicted_cl_address = cache_line_start_mem_address(loc);
-        // get cache location to memory mapping
-        cache_line = cache_storage[cache_loc_to_address.get(loc)];
-        
+       
         // write data to retrieved memory address
         for (int i=0; i<CACHELINE_SZ;i++) {
+        		cache_line[i] = cache_storage[loc+i];
         		// Evict the sequence of addresses to RAM
         		ram[evicted_cl_address+i] = cache_line[i];
         }
