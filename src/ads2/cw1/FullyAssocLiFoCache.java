@@ -12,6 +12,7 @@ package ads2.cw1;
 import ads2.cw1.Cache;
 
 import java.util.Stack;
+import java.util.Arrays;
 import java.util.HashMap;
 
 class FullyAssocLiFoCache implements Cache {
@@ -52,7 +53,14 @@ class FullyAssocLiFoCache implements Cache {
 		last_used_loc = CACHE_SZ / CACHELINE_SZ - 1;
 		// WV: Your initialisations here
 		cache_storage = new int[cacheSize];
-		location_stack = new Stack<>();
+		location_stack = new Stack<Integer>();
+		for (int location=0; location<CACHE_SZ; location+=CACHELINE_SZ) {
+        		location_stack.push(location);
+        }
+		
+		if (VERBOSE) System.out.println(Arrays.toString(location_stack.toArray()));
+        address_to_cache_loc = new HashMap<>();
+		cache_loc_to_address = new HashMap<>();
 	}
 
 	public void flush(int[] ram, Status status) {
@@ -229,6 +237,7 @@ class FullyAssocLiFoCache implements Cache {
 	// otherwise if cache is full returns -1
 	private int get_next_free_location() {
 		if (!cache_is_full()) {
+			if (VERBOSE) System.out.println(location_stack.pop());
 			return location_stack.pop();
 		} else {
 			return -1;
@@ -252,16 +261,15 @@ class FullyAssocLiFoCache implements Cache {
 	// When evicting a cache line, write its contents back to main memory
 	private void write_to_mem_on_evict(int[] ram, int loc) {
 
-		int evicted_cl_address = cache_line_start_mem_address(loc);
-		int[] cache_line = new int[CACHELINE_SZ];
+		int evicted_cl_address = cache_loc_to_address.get(loc);
+	
 		if (VERBOSE)
 			System.out.println("Cache line to RAM: ");
 
 		// write data to retrieved memory address
 		for (int i = 0; i < CACHELINE_SZ; i++) {
-			cache_line[i] = cache_storage[loc + i];
 			// Evict the sequence of addresses to RAM
-			ram[evicted_cl_address + i] = cache_line[i];
+			ram[evicted_cl_address + i] = cache_storage[loc + i];
 		}
 
 		// update free location stack
