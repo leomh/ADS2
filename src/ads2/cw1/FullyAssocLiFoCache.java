@@ -98,13 +98,26 @@ class FullyAssocLiFoCache implements Cache {
 		// The cache policy is write-back, so the writes are always to the cache.
 		// The update policy is write allocate: on a write miss, a cache line is loaded
 		// to cache, followed by a write operation.
+		int loc;
 		
 		// check if address is already in the cache
-		// if it is, just update the cache entry
-		// else:
+		if (address_in_cache_line(address)) {
+			update_cache_entry(address, data);
+			loc = address_to_cache_loc.get(address);
+			status.setHitOrMiss(true);
 		// is the cache full? if yes, evict a cache line
-		// don't forget to set the status
+		} else if (cache_is_full()) {
+			loc = last_used_loc;
+			write_to_mem_on_evict(ram, loc);
+			status.setEvicted(true);
+			status.setEvictedCacheLoc(loc);
+			status.setEvictedCacheLineAddr(cache_loc_to_address.get(loc));
+			// and now write in that location
 		// if not, get free location and write data there
+		} else {
+			loc = get_next_free_location();
+		}
+		
 		// update last_used_loc and free location stack (pop)
 		// update address mappings
 		
@@ -241,8 +254,7 @@ class FullyAssocLiFoCache implements Cache {
 		evict_location(loc);
 	}
 
-	// Test if a main memory address is in a cache line stored in the cache
-	// In other words, is the value for this memory address stored in the cache?
+	// Is the value for this memory address stored in the cache?
 	private boolean address_in_cache_line(int address) {
 		boolean inCache = address_to_cache_loc.containsKey(cache_line_address(address));
 		if (VERBOSE)
