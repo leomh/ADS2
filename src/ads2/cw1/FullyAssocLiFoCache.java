@@ -13,7 +13,6 @@ import ads2.cw1.Cache;
 
 import java.util.Stack;
 import java.util.HashMap;
-import java.util.Set;
 
 class FullyAssocLiFoCache implements Cache {
 
@@ -70,8 +69,8 @@ class FullyAssocLiFoCache implements Cache {
 	        	location_stack.push(cache_address);
         }
         cache_storage = new int[CACHELINE_SZ];
-        cache_loc_to_address = new HashMap<Integer,Integer>();
-        address_to_cache_loc = new HashMap<Integer, Integer>();
+        cache_loc_to_address.clear();
+        address_to_cache_loc.clear();
         last_used_loc = 0;
         status.setFreeLocations(location_stack.size());
         status.setFlushed(true);
@@ -113,14 +112,19 @@ class FullyAssocLiFoCache implements Cache {
 			status.setEvictedCacheLoc(loc);
 			status.setEvictedCacheLineAddr(cache_loc_to_address.get(loc));
 			// and now write in that location
+			cache_storage[loc] = data;
 		// if not, get free location and write data there
 		} else {
 			loc = get_next_free_location();
+			cache_storage[loc] = data;
 		}
 		
-		// update last_used_loc and free location stack (pop)
-		// update address mappings
-		
+		// update last_used_loc
+		last_used_loc = loc;
+		// update look up tables
+		address_to_cache_loc.put(address, loc);
+		cache_loc_to_address.put(loc, address);
+		status.setFreeLocations(location_stack.size());
 
 	}
 
@@ -130,7 +134,7 @@ class FullyAssocLiFoCache implements Cache {
 		status.setEvicted(false);
 		status.setHitOrMiss(true); // i.e. a hit
 		
-		int data = 0; 
+		int data;
 		
 		// Reads are always to the cache. On a read miss you need to fetch a cache line
 		// from the DRAM
@@ -139,10 +143,16 @@ class FullyAssocLiFoCache implements Cache {
 		
 		// get cache data location for given address
 		// if it does not exist, get it from dram and write it to cache
-		// (call previous function)
-		// return the data
+		if (!address_in_cache_line(address)) {
+			status.setHitOrMiss(false);
+			read_from_mem_on_miss(ram, address);
+		} 
+			
+		data = fetch_cache_entry(address);
 
 		status.setData(data);
+		status.setFreeLocations(location_stack.size());
+		last_used_loc = cache_line_address(address);
 		return data;
 	}
 
