@@ -16,7 +16,7 @@ import java.util.HashMap;
 
 class FullyAssocLiFoCache implements Cache {
 
-	final private static boolean VERBOSE = false;
+	final private static boolean VERBOSE = true;
 
 	final private int CACHE_SZ;
 	final private int CACHELINE_SZ;
@@ -97,16 +97,19 @@ class FullyAssocLiFoCache implements Cache {
 		// The cache policy is write-back, so the writes are always to the cache.
 		// The update policy is write allocate: on a write miss, a cache line is loaded
 		// to cache, followed by a write operation.
+		if (VERBOSE) System.out.println("Writing data " + data + " into cache at address " + address);
 		int loc;
 		
 		// check if address is already in the cache
 		if (address_in_cache_line(address)) {
+			if (VERBOSE) System.out.println("address is already in the cache");
 			update_cache_entry(address, data);
 			loc = address_to_cache_loc.get(address);
 			status.setHitOrMiss(true);
 		// is the cache full? if yes, evict a cache line
 		} else if (cache_is_full()) {
 			loc = last_used_loc;
+			if (VERBOSE) System.out.println("cache is full, evicting " + loc);
 			write_to_mem_on_evict(ram, loc);
 			status.setEvicted(true);
 			status.setEvictedCacheLoc(loc);
@@ -116,6 +119,7 @@ class FullyAssocLiFoCache implements Cache {
 		// if not, get free location and write data there
 		} else {
 			loc = get_next_free_location();
+			if (VERBOSE) System.out.println("cache is free at location " + loc + ", writing there");
 			cache_storage[loc] = data;
 		}
 		
@@ -266,10 +270,8 @@ class FullyAssocLiFoCache implements Cache {
 
 	// Is the value for this memory address stored in the cache?
 	private boolean address_in_cache_line(int address) {
-		boolean inCache = address_to_cache_loc.containsKey(cache_line_address(address));
-		if (VERBOSE)
-			System.out.println("Looking for " + Integer.toString(address) + " in cache");
-		return inCache;
+		if (VERBOSE) System.out.println("Looking for " + Integer.toString(address) + " in cache");
+		return address_to_cache_loc.containsKey(address);
 	}
 
 	// Given a main memory address, return the corresponding cache line address
