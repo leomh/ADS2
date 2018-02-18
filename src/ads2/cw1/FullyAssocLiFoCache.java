@@ -108,13 +108,10 @@ class FullyAssocLiFoCache implements Cache {
 		// to cache, followed by a write operation.
 		if (VERBOSE) System.out.println("Writing data " + data + " into cache at address " + address);
 		
-		// EXPLANATION: 
-		int cl_address = cache_line_address(address);
-		
 		if (VERBOSE) System.out.println(Arrays.toString(cache_storage));
 		
 		if (address_in_cache_line(address)) {
-			if (VERBOSE) System.out.println("address is already in the cache");
+			if (VERBOSE) System.out.println("Address is already in the cache");
 			status.setHitOrMiss(true);
 		// is it a miss? if yes, load a cache line from memory
 		// to update it afterwards
@@ -123,12 +120,16 @@ class FullyAssocLiFoCache implements Cache {
 			read_from_mem_on_miss(ram, address, status);
 		}
 		
+		// in both cases, there is a cache_line at the right address
+		// that we can update
 		update_cache_entry(address, data);
 		
 		// update last_used_loc
-		last_used_loc = cl_address;
+		last_used_loc = address_to_cache_loc.get(cache_line_address(address));
+		
 		// look up tables are updated in read_from_mem_miss
 		// otherwise the mapping already exists as we're only updating
+		
 		status.setFreeLocations(location_stack.size());
 
 	}
@@ -154,7 +155,7 @@ class FullyAssocLiFoCache implements Cache {
 
 		status.setData(data);
 		status.setFreeLocations(location_stack.size());
-		last_used_loc = cache_line_address(address);
+		last_used_loc = address_to_cache_loc.get(cache_line_address(address));
 		return data;
 	}
 
@@ -164,40 +165,35 @@ class FullyAssocLiFoCache implements Cache {
 	
 	// On read miss, fetch a cache line and store it in cache
 	private void read_from_mem_on_miss(int[] ram, int address, Status status) {
-		if (VERBOSE)
-			System.out.println("Cache read miss, fetching data from memory");
+		if (VERBOSE) System.out.println("Cache read miss, fetching data from memory");
 		int[] cache_line = new int[CACHELINE_SZ];
-
+		int cl_address = cache_line_address(address);
+		
 		if (cache_is_full()) {
-			if (VERBOSE)
-				System.out.println("Cache is full, evicting last cache line: " + last_used_loc);
+			if (VERBOSE) System.out.println("Cache is full, evicting last cache line: " + last_used_loc);
 			status.setEvicted(true);
 			status.setEvictedCacheLineAddr(cache_loc_to_address.get(last_used_loc));
 			status.setEvictedCacheLoc(last_used_loc);
 			write_to_mem_on_evict(ram, last_used_loc);
 		}
-
 		
 		int loc = get_next_free_location();
-		// BUG POTENTIAL: get cache line address given the main memory address
-		int cl_address = cache_line_address(address);
 
 		for (int i = 0; i < CACHELINE_SZ; i++) {
 			// create new cache line in cache from memory
-			cache_line[i] = ram[cl_address + i];
+			cache_line[i] = ram[address + i];
 		}
 
 		// update look up tables (add cache line to cache)
 		address_to_cache_loc.put(cl_address, loc);
 		cache_loc_to_address.put(loc, address);
-		if (VERBOSE)
-			System.out.println("ATCL: " + Arrays.asList(address_to_cache_loc));
-		if (VERBOSE)
-			System.out.println("CLTA: " + Arrays.asList(cache_loc_to_address));
+		
+		if (VERBOSE) System.out.println("ATCL: " + Arrays.asList(address_to_cache_loc));
+		if (VERBOSE) System.out.println("CLTA: " + Arrays.asList(cache_loc_to_address));
 
 		// load cache with the cache line
 		for (int i = 0; i < CACHELINE_SZ; i++) {
-			cache_storage[loc + i] = cache_line[i];
+			cache_storage[loc*CACHELINE_SZ + i] = cache_line[i];
 		}
 
 		// update last used location as cache location
@@ -211,7 +207,7 @@ class FullyAssocLiFoCache implements Cache {
 		// for the given memory address
 		int loc = address_to_cache_loc.get(cache_line_address(address));
 		// very unsure about this
-		cache_storage[loc+cache_entry_position(address)] = data;
+		cache_storage[loc*CACHELINE_SZ+cache_entry_position(address)] = data;
 
 		last_used_loc = loc;
 	}
@@ -224,11 +220,12 @@ class FullyAssocLiFoCache implements Cache {
 		int loc = address_to_cache_loc.get(cache_line_address(address));
 
 		for (int i = 0; i < CACHELINE_SZ; i++) {
-			cache_line[i] = cache_storage[loc + i];
+			cache_line[i] = cache_storage[loc*CACHELINE_SZ + i];
 		}
 
 		last_used_loc = loc;
 		// vv BUG POTENTIAL unsure if this is the right pointer method to use
+		if (VERBOSE) System.out.println("index within cache_line is " + cache_entry_position(address));
 		return cache_line[cache_entry_position(address)];
 	}
 
@@ -247,9 +244,9 @@ class FullyAssocLiFoCache implements Cache {
 	private void evict_location(int loc) {
 		// set the location as free location in the stack
 		if (VERBOSE) System.out.println("Pushing " + loc + " onto the free locations stack");
-		location_stack.push(address_to_cache_loc.get(loc));
-		cache_loc_to_address.remove(location_stack.peek());
-		address_to_cache_loc.remove(loc);
+		location_stack.push(loc);
+		cache_loc_to_address.remove(loc);
+		address_to_cache_loc.remove(cache_line_address(cache_loc_to_address.get(loc)));
 	}
 
 	private boolean cache_is_full() {
@@ -259,17 +256,16 @@ class FullyAssocLiFoCache implements Cache {
 	// When evicting a cache line, write its contents back to main memory
 	private void write_to_mem_on_evict(int[] ram, int loc) {
 		
-		// does this give the proper cl address? might not. BUG POTENTIAL
-		int evicted_cl_address = cache_line_start_mem_address(loc);
+		// get absolute address in ram for given cache loc 
+		int evicted_cl_address = cache_loc_to_address.get(loc);
 	
 		if (VERBOSE) System.out.println("Evicting...");
-		if (VERBOSE)
-			System.out.println("Cache line to RAM: ");
+		if (VERBOSE) System.out.println("Cache line to RAM: ");
 
 		// write data to retrieved memory address
 		for (int i = 0; i < CACHELINE_SZ; i++) {
 			// Evict the sequence of addresses to RAM
-			ram[evicted_cl_address + i] = cache_storage[address_to_cache_loc.get(loc) + i];
+			ram[evicted_cl_address + i] = cache_storage[loc*CACHELINE_SZ + i];
 		}
 
 		// update free location stack
@@ -282,12 +278,13 @@ class FullyAssocLiFoCache implements Cache {
 		return address_to_cache_loc.containsKey(cache_line_address(address));
 	}
 
-	//             ///                        //
+	//               ///                      //
 	// Going about cache lines in main memory //
-	//             ///                        //
+	//               ///                      //
 	
 	// Given a main memory address, return the corresponding cache line address
 	// e.g. for address 8 and CACHE_SZ 4 this is cache line 2
+	// absolute to relative
 	private int cache_line_address(int address) {
 		return address >> CL_SHIFT;
 	}
