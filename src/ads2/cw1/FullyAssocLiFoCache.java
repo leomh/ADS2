@@ -172,8 +172,8 @@ class FullyAssocLiFoCache implements Cache {
 			loc = last_used_loc;
 			if (VERBOSE) System.out.println("Cache is full, evicting last cache line: " + loc);
 			status.setEvicted(true);
-			//status.setEvictedCacheLineAddr(cache_loc_to_address.get(loc));
-			//status.setEvictedCacheLoc(loc);
+			status.setEvictedCacheLoc(loc);
+			status.setEvictedCacheLineAddr(cache_line_address(cache_loc_to_address.get(loc)));
 			write_to_mem_on_evict(ram, loc);
 		} 
 		loc = get_next_free_location();
