@@ -75,7 +75,7 @@ class FullyAssocLiFoCache implements Cache {
 	        	// push newly created free location address onto location stack
 	        	location_stack.push(cache_address);
         }
-        cache_storage = new int[CACHELINE_SZ];
+        cache_storage = new int[CACHE_SZ]; 
         cache_loc_to_address.clear();
         address_to_cache_loc.clear();
         last_used_loc = 0;
@@ -105,9 +105,6 @@ class FullyAssocLiFoCache implements Cache {
 		// The update policy is write allocate: on a write miss, a cache line is loaded
 		// to cache, followed by a write operation.
 		if (VERBOSE) System.out.println("Writing data " + data + " into cache at address " + address);
-		if (VERBOSE) System.out.println(Arrays.toString(cache_storage));
-		if (VERBOSE) System.out.println("CLTA: " + Arrays.asList(cache_loc_to_address));
-		if (VERBOSE) System.out.println("ATCL: " + Arrays.asList(address_to_cache_loc));
 		
 		if (address_in_cache_line(address)) {
 			if (VERBOSE) System.out.println("Address is already in the cache");
@@ -168,6 +165,7 @@ class FullyAssocLiFoCache implements Cache {
 		int[] cache_line = new int[CACHELINE_SZ];
 		int cl_address = cache_line_address(address);
 		int loc;
+		
 		if (cache_is_full()) {
 			loc = last_used_loc;
 			if (VERBOSE) System.out.println("Cache is full, evicting last cache line: " + loc);
@@ -187,7 +185,7 @@ class FullyAssocLiFoCache implements Cache {
 		
 		// load cache with the cache line
 		for (int i = 0; i < CACHELINE_SZ; i++) {
-			cache_storage[loc*CACHELINE_SZ + i] = cache_line[i];
+			cache_line[i] = cache_storage[loc*CACHELINE_SZ + i];
 		}
 
 		address_to_cache_loc.put(cl_address, loc);
