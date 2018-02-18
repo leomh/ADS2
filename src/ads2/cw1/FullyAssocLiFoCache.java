@@ -178,7 +178,7 @@ class FullyAssocLiFoCache implements Cache {
 
 		for (int i = 0; i < CACHELINE_SZ; i++) {
 			// create new cache line in cache from memory
-			cache_line[i] = ram[address + i];
+			cache_line[i] = ram[cache_line_address(address)*CACHELINE_SZ + i];
 		}
 		
 		// update look up tables (add cache line to cache)
@@ -252,14 +252,17 @@ class FullyAssocLiFoCache implements Cache {
 	private void write_to_mem_on_evict(int[] ram, int loc) {
 		
 		// get absolute address in ram for given cache loc 
-		int evicted_cl_address = cache_loc_to_address.get(loc);
+		// int evicted_cl_address = cache_line_start_mem_address(cache_loc_to_address.get(loc));
+		// vvv gets 3% of test 3
+		int evicted_cl_address = cache_line_start_mem_address(loc);
 	
 		if (VERBOSE) System.out.println("Evicting..." + loc);
 		if (VERBOSE) System.out.println("Cache line to RAM: ");
-
+		
 		// write data to retrieved memory address
 		for (int i = 0; i < CACHELINE_SZ; i++) {
 			// Evict the sequence of addresses to RAM
+			if (VERBOSE) System.out.print((evicted_cl_address + i) + " ");
 			ram[evicted_cl_address + i] = cache_storage[loc*CACHELINE_SZ + i];
 		}
 		
