@@ -12,7 +12,6 @@ package ads2.cw1;
 import ads2.cw1.Cache;
 
 import java.util.Stack;
-import java.util.Arrays;
 import java.util.HashMap;
 
 class FullyAssocLiFoCache implements Cache {
@@ -172,17 +171,16 @@ class FullyAssocLiFoCache implements Cache {
 		address_to_cache_loc.put(cl_address, loc);
 		cache_loc_to_address.put(loc, address);
 
-		// update last used location as cache location
 		last_used_loc = loc;
 	}
 
 	// On write, modify a cache line
 	private void update_cache_entry(int address, int data) {
-		// get the location of the current data in the cache 
-		// for the given memory address
+		// get the location of the current data in the cache for the given memory address
 		int loc = address_to_cache_loc.get(cache_line_address(address));
 		if (VERBOSE) System.out.println("Updating cache entry in cache line " + loc + " for data at address " + address);
 		
+		// write the new data in
 		cache_storage[loc*CACHELINE_SZ+cache_entry_position(address)] = data;
 		
 		last_used_loc = loc;
@@ -232,12 +230,10 @@ class FullyAssocLiFoCache implements Cache {
 		// gets relative address of cache line in memory (* by CACHELINE_SZ later)
 		int evicted_cl_address = cache_line_address(cache_loc_to_address.get(loc));
 	
-		if (VERBOSE) System.out.println("Evicting..." + loc);
-		if (VERBOSE) System.out.println("Cache line to RAM: ");
+		if (VERBOSE) System.out.println("Cache line to RAM: " + loc);
 		
-		// write data to retrieved memory address
+		// evict data to retrieved memory address
 		for (int i = 0; i < CACHELINE_SZ; i++) {
-			// Evict the sequence of addresses to RAM
 			ram[evicted_cl_address*CACHELINE_SZ + i] = cache_storage[loc*CACHELINE_SZ + i];
 		}
 		
